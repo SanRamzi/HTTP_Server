@@ -46,7 +46,7 @@ void* monitor_input(void* arg) {
             struct tm tm = *localtime(&t);
             char time_string[100];
             snprintf(time_string,100,"%d-%02d-%02d %02d:%02d:%02d",tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-            snprintf(shutdown_log,sizeof(time_string) + 30,"%s : Shutting down server...\n",time_string);
+            snprintf(shutdown_log,sizeof(time_string) + 30,"%s : Shutting down server...\n\n",time_string);
             printf("%s",shutdown_log);
             FILE *log_file = fopen("server_logs","a");
             fprintf(log_file,"%s",shutdown_log);
@@ -200,7 +200,6 @@ int main(int argc, char *argv[]){
         usage_message(argv[0]);
         return -1;
     }
-    //Opening log file
     //Server init
     int server_socket,client_socket;
     struct sockaddr_in server;
