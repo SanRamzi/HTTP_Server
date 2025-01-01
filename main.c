@@ -1,3 +1,4 @@
+/*HTTP Server written in C by San Ramzi*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -7,6 +8,7 @@
 #include <pthread.h>
 #include <string.h>
 
+//Server Address
 #define SERVER_ADDRESS "127.0.0.1"
 
 //Usage error message
@@ -28,7 +30,7 @@ char* read_file(const char* filename,size_t* file_size) {
     fclose(file);
     return buffer;
 }
-//Monitor input for exit or quit to shut down server
+//Monitor input for "exit" or "quit" to shut down server
 void* monitor_input(void* arg) {
     int server_socket = *(int *)arg;
     char input[100];
@@ -163,30 +165,36 @@ int main(int argc, char *argv[]){
     server.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
     server.sin_family = AF_INET;
     server.sin_port = htons(port_no);
+    //Binding error
     if(bind(server_socket,(struct sockaddr *)&server,sizeof(server))){
         close(server_socket);
         printf("Binding error. Port might be blocked. Exiting...\n");
         return -1;
     }
+    //Listening error
     if(listen(server_socket,3)){
         close(server_socket);
         printf("Listening error. Exiting...\n");
         return -1;
     }
     printf("Server started listening on %s:%d\n",SERVER_ADDRESS,port_no);
+    //Start input thread to listen for server shutdown
     pthread_t input_thread;
     pthread_create(&input_thread,NULL,monitor_input,&server_socket);
+    //Main loop for receiving connections
     while(1){
         struct sockaddr_in client;
         int address_size = sizeof(server);
         pthread_t child;
         int* client_socket_ptr = malloc(sizeof(int));
+        //Accept incoming connection
         client_socket = accept(server_socket,(struct sockaddr*)&client,&address_size);
         if(client_socket < 0){
             continue;
         }
-        printf("Incoming connection from %s:%d\n",inet_ntoa(client.sin_addr),ntohs(client.sin_port));
+        printf("Incoming request from %s:%d\n",inet_ntoa(client.sin_addr),ntohs(client.sin_port));
         *client_socket_ptr = client_socket;
+        //Create a thread and run client_function
         if(pthread_create(&child,NULL,client_function,client_socket_ptr)){
             printf("Error creating thread.\n");
             free(client_socket_ptr);
@@ -196,6 +204,7 @@ int main(int argc, char *argv[]){
             pthread_detach(child);
         }
     }
+    //Shutdown server
     pthread_join(input_thread, NULL);
     printf("Server shut down.\n");
     return 0;
