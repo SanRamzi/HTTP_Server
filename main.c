@@ -58,6 +58,24 @@ void* monitor_input(void* arg) {
     }
     return NULL;
 }
+//Get content-type for HTTP header
+char* get_mime_type(const char* filename) {
+    const char* ext = strrchr(filename, '.'); //Get the file extension
+    if (!ext) return "application/octet-stream"; //Default binary type if no extension
+    if (strcmp(ext, ".html") == 0) return "text/html";
+    if (strcmp(ext, ".css") == 0) return "text/css";
+    if (strcmp(ext, ".js") == 0) return "application/javascript";
+    if (strcmp(ext, ".json") == 0) return "application/json";
+    if (strcmp(ext, ".png") == 0) return "image/png";
+    if (strcmp(ext, ".jpg") == 0 || strcmp(ext, ".jpeg") == 0) return "image/jpeg";
+    if (strcmp(ext, ".gif") == 0) return "image/gif";
+    if (strcmp(ext, ".svg") == 0) return "image/svg+xml";
+    if (strcmp(ext, ".txt") == 0) return "text/plain";
+    if (strcmp(ext, ".xml") == 0) return "application/xml";
+    if (strcmp(ext, ".pdf") == 0) return "application/pdf";
+
+    return "application/octet-stream"; //Default for unknown types
+}
 //Client accept function
 void* client_function(void* arg){
 
@@ -100,15 +118,16 @@ void* client_function(void* arg){
     //If file can be read then return file contents to client
     if(file_content != NULL){
         printf("Client requested %s.\n",requested_path);
-        response = malloc(file_size + 128);
+        response = malloc(file_size + 256);
         if(!response){
             printf("ERROR: Memory allocation failed for response.\n");
             free(file_content);
             close(client_socket);
             return NULL;
         }
-        
-        snprintf(response, file_size + 128, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %zu\r\n\r\n", file_size);
+        //Send HTTP header
+        char* mime_type = get_mime_type(requested_path);
+        snprintf(response, file_size + 256, "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %zu\r\n\r\n", mime_type, file_size);
         bytes_sent = send(client_socket,response,strlen(response),0);
         if(bytes_sent <= 0){
             printf("Error sending response headers.\n");
@@ -131,15 +150,16 @@ void* client_function(void* arg){
         strcat(requested_path,".html");
         file_content = read_file(requested_path,&file_size);
         if(file_content != NULL){
-            response = malloc(file_size + 128);
+            response = malloc(file_size + 256);
             if(!response){
                 printf("ERROR: Memory allocation failed for response.\n");
                 free(file_content);
                 close(client_socket);
                 return NULL;
             }
-
-            snprintf(response, file_size + 128, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %zu\r\n\r\n", file_size);
+            //Send HTTP header
+            char* mime_type = get_mime_type(requested_path);
+            snprintf(response, file_size + 256, "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %zu\r\n\r\n", mime_type, file_size);
             bytes_sent = send(client_socket,response,strlen(response),0);
             if(bytes_sent <= 0){
                 printf("Error sending response headers.\n");
